@@ -12,7 +12,6 @@ const userSchema = new mongoose.Schema({
   },
   password: {
     type: String,
-    required: true,
   },
   role: {
     type: String,
@@ -26,7 +25,6 @@ const userSchema = new mongoose.Schema({
   },
   customerId: {
     type: Number,
-    required: true
   }
 });
 

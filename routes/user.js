@@ -47,13 +47,18 @@ userRouter.post("/validate-user", async (req, res) => {
 
 userRouter.post("/create-user", async (req, res) => {
   const { body } = req;
+  const isCustomer = req.query.isCustomer;
   // console.log(body, "Recived in user api");
   try {
     let user = await userModel.findOne({ email: body.email });
     if (user) {
       return res.status(200).send({ msg: "Email alredy exists" });
     }
-    await userModel.create({ ...body, password: "", id: await getNextSequenceValue('userId') });
+    if (isCustomer) {
+      await userModel.create({ ...body, password: "", id: await getNextSequenceValue('userId'), id: await getNextSequenceValue('customerId') })
+    }
+    else await userModel.create({ ...body, password: "", id: await getNextSequenceValue('userId') });
+
     user = await userModel.findOne({ email: body.email }, { __v: 0, password: 0, _id: 0 });
     const jwtToken = generateJWT({ user });
     sendMail({
