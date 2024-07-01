@@ -47,17 +47,12 @@ userRouter.post("/validate-user", async (req, res) => {
 
 userRouter.post("/create-user", async (req, res) => {
   const { body } = req;
-  const isCustomer = req.query.isCustomer;
-  // console.log(body, "Recived in user api");
   try {
     let user = await userModel.findOne({ email: body.email });
     if (user) {
       return res.status(200).send({ msg: "Email alredy exists" });
     }
-    if (isCustomer) {
-      await userModel.create({ ...body, password: "", id: await getNextSequenceValue('userId'), id: await getNextSequenceValue('customerId') })
-    }
-    else await userModel.create({ ...body, password: "", id: await getNextSequenceValue('userId') });
+    await userModel.create({ ...body, password: "", id: await getNextSequenceValue('userId') });
 
     user = await userModel.findOne({ email: body.email }, { __v: 0, password: 0, _id: 0 });
     const jwtToken = generateJWT({ user });
@@ -75,6 +70,31 @@ userRouter.post("/create-user", async (req, res) => {
     res.status(500).send({ msg: "Something went wrong" });
   }
 });
+userRouter.post('/create-customer', async (req, res) => {
+  const { body } = req;
+  console.log(body);
+  try {
+    let user = await userModel.findOne({ email: body.email });
+    if (user) {
+      return res.status(400).send({ msg: "Email alredy exists" });
+    }
+    await userModel.create({ ...body, password: "", id: await getNextSequenceValue('userId'), customerId: await getNextSequenceValue('customerId') })
+    user = await userModel.findOne({ email: body.email }, { __v: 0, password: 0, _id: 0 });
+    const jwtToken = generateJWT({ user });
+    sendMail({
+      email: body.email,
+      link: `${constants.fronEndUrl}/reset-password?token=${jwtToken}`,
+      name: body.name,
+      type: "registration",
+    });
+    // console.log({ ...body, password: null });
+    res.send({ msg: "User created successfully", error: false });
+  } catch (error) {
+    await decreaseSequenceValue('userId');
+    console.log(error);
+    res.status(500).send({ msg: "Something went wrong" });
+  }
+})
 
 userRouter.post("/require-change-password", async (req, res) => {
   const { body } = req;
