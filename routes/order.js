@@ -11,7 +11,7 @@ orderRouter.post('/create-order', async (req, res) => {
     const customerId = req.token.customerId;
     const orderType = req.query.orderType;
     try {
-        await orderModel.create({ ...body, id: await getNextSequenceValue("orderId"), customerId });
+        await orderModel.create({ ...body, id: await getNextSequenceValue("orderId"), customerId, transactionType: orderType });
         const product = await productModel.findOne({ id: body.productId });
         console.log(product);
         await productModel.updateOne({ id: product.id }, {
@@ -36,8 +36,10 @@ orderRouter.put('/change-status/:id', async (req, res) => {
     const { body } = req;
     try {
         const order = await orderModel.findOne({ id });
+        console.log(order);
         if (!order) return res.status(400).send({ msg: "Order not found", error: true });
-        await orderModel.updateOne({ id }, { $set: { orderStatus: body.orderStatustatus, updatedAt: new Date() } });
+
+        await orderModel.updateOne({ id }, { $set: { orderStatus: body.orderStatus, updatedAt: new Date() } });
         if (body.orderStatustatus === "completed") {
             const product = await productModel.findOne({ id: order.productId });
             await productModel.updateOne({ id: product.id }, { $set: { quantityOnHand: product.quantityOnHand + order.quantity } });
